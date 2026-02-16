@@ -41,24 +41,24 @@ class PathConfig:
     """
 
     ppdb_lsst_dir: Path = Path("/sdf/scratch/rubin/ppdb/data/ppdb_lsstcam")
-    commissioning_dir: Path = Path("/sdf/data/rubin/shared/lsdb_commissioning")
-
-    @property
-    def ppdb_hats_dir(self) -> Path:
-        """Base HATS directory for PPDB collections"""
-        return self.commissioning_dir / "ppdb"
+    ppdb_hats_dir: Path = Path("/sdf/data/rubin/shared/lsdb_commissioning/ppdb")
 
     @property
     def dia_object_collection_dir(self) -> Path:
         """Directory containing the dia_object_collection"""
         return self.ppdb_hats_dir / "dia_object_collection"
 
+    @property
+    def weekly_dir(self) -> Path:
+        """Directory where weekly imports should be stored"""
+        return self.ppdb_hats_dir / "weekly"
+
     def __post_init__(self):
         """Ensure paths are Path objects"""
         if isinstance(self.ppdb_lsst_dir, str):
             self.ppdb_lsst_dir = Path(self.ppdb_lsst_dir)
-        if isinstance(self.commissioning_dir, str):
-            self.commissioning_dir = Path(self.commissioning_dir)
+        if isinstance(self.ppdb_hats_dir, str):
+            self.ppdb_hats_dir = Path(self.ppdb_hats_dir)
 
 
 @dataclass

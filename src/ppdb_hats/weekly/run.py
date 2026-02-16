@@ -5,6 +5,7 @@ for optimal data organization and query performance.
 """
 
 import logging
+from datetime import date
 from pathlib import Path
 
 import lsdb
@@ -41,7 +42,7 @@ class WeeklyPipeline(Pipeline):
         tmp_dir : pathlib.Path
             Temporary directory for intermediate files.
         """
-        ppdb_hats_dir = self.config.paths.ppdb_hats_dir
+        weekly_dir = self.config.paths.weekly_dir
 
         # Step 1: Load collection with margins
         dia_object_lc = self._load_collection(client, tmp_dir)
@@ -52,12 +53,14 @@ class WeeklyPipeline(Pipeline):
         # Step 3: Write aggregated catalog to disk for reimport
         self._write_catalog(tmp_dir, aggregated_catalog)
 
+        collection_id = date.today().isoformat()
+
         # Step 4: Reimport aggregated catalog with hats-import,
         # to optimize partitioning and parquet specifications.
-        reimport_catalog(client, tmp_dir, ppdb_hats_dir)
+        reimport_catalog(client, tmp_dir, weekly_dir, collection_id)
 
         # Step 5: Generate final collection
-        generate_collection(client, ppdb_hats_dir)
+        generate_collection(client, weekly_dir, collection_id)
 
         logger.info("Collection reprocessing complete.")
 
@@ -115,11 +118,6 @@ class WeeklyPipeline(Pipeline):
         aggregated_catalog.write_catalog(tmp_dir / "dia_object_lc", as_collection=False, overwrite=True)
 
 
-def main():
+def main(config):
     """Main entry point for weekly PPDB pipeline."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(module)s:%(funcName)s | %(message)s",
-        datefmt="%H:%M:%S",
-    )
-    WeeklyPipeline().execute()
+    WeeklyPipeline(config=config).execute()

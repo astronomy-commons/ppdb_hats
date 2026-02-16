@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 def reimport_catalog(
     client: Client,
     tmp_dir: Path,
-    ppdb_hats_dir: Path,
+    weekly_dir: Path,
+    collection_id: str,
 ) -> None:
     """Reimport an aggregated catalog into a balanced collection.
 
@@ -27,13 +28,15 @@ def reimport_catalog(
         Dask client for the reimport pipeline.
     tmp_dir : pathlib.Path
         Directory containing the aggregated catalog to reimport.
-    ppdb_hats_dir : pathlib.Path
+    weekly_dir : pathlib.Path
         Base PPDB HATS directory where the reimported collection will be written.
+    collection_id : str
+        Collection identifier string (YYYY-MM-DD format).
     """
     logger.info("Reimporting catalog...")
     args = ImportArguments.reimport_from_hats(
         path=tmp_dir / "dia_object_lc",
-        output_dir=ppdb_hats_dir / "dia_object_collection_reimport",
+        output_dir=weekly_dir / f"dia_object_collection_{collection_id}",
         output_artifact_name="dia_object_lc",
         byte_pixel_threshold=1 << 30,
         skymap_alt_orders=[2, 4, 6],
@@ -44,7 +47,8 @@ def reimport_catalog(
 
 def generate_collection(
     client: Client,
-    ppdb_hats_dir: Path,
+    weekly_dir: Path,
+    collection_id: str,
 ) -> None:
     """Generate a final HATS collection with indexes and margins.
 
@@ -52,16 +56,22 @@ def generate_collection(
     ----------
     client : dask.distributed.Client
         Dask client used to run collection generation.
-    ppdb_hats_dir : pathlib.Path
+    weekly_dir : pathlib.Path
         Base PPDB HATS directory where the collection will be created.
+    collection_id : str
+        Collection identifier string (YYYY-MM-DD format).
     """
     logger.info("Generating collection...")
+
+    collection_artifact_name = f"dia_object_collection_{collection_id}"
+    catalog_path = weekly_dir / collection_artifact_name / "dia_object_lc"
+
     collection_args = (
         CollectionArguments(
-            output_path=ppdb_hats_dir,
-            output_artifact_name="dia_object_collection_reimport",
+            output_path=weekly_dir,
+            output_artifact_name=collection_artifact_name,
         )
-        .catalog(catalog_path=ppdb_hats_dir / "dia_object_collection_reimport" / "dia_object_lc")
+        .catalog(catalog_path=catalog_path)
         .add_margin(margin_threshold=10)
         .add_index(indexing_column="diaObjectId")
     )
