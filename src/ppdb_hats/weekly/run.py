@@ -13,6 +13,7 @@ from dask.distributed import Client
 from hats_import import pipeline_with_client
 from hats_import.margin_cache.margin_cache_arguments import MarginCacheArguments
 
+from ppdb_hats.config import PipelineConfig
 from ppdb_hats.pipeline import Pipeline
 from ppdb_hats.weekly.aggregate import aggregate_object_data
 from ppdb_hats.weekly.reimport import generate_collection, reimport_catalog
@@ -118,6 +119,6 @@ class WeeklyPipeline(Pipeline):
         aggregated_catalog.write_catalog(tmp_dir / "dia_object_lc", as_collection=False, overwrite=True)
 
 
-def main(config):
+def main(config: PipelineConfig = None):
     """Main entry point for weekly PPDB pipeline."""
     WeeklyPipeline(config=config).execute()

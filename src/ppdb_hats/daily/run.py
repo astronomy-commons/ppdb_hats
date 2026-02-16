@@ -7,6 +7,7 @@ import hats
 import lsdb
 from dask.distributed import Client
 
+from ppdb_hats.config import PipelineConfig
 from ppdb_hats.daily.increment import update_metadata, update_skymaps, write_partitions
 from ppdb_hats.daily.ingest import import_catalog
 from ppdb_hats.daily.nest import load_sources_with_margin, nest_sources
@@ -40,6 +41,9 @@ class DailyPipeline(Pipeline):
 
         # Step 2: Get new input files
         object_files, source_files, fsource_files = self._get_paths()
+
+        if len(object_files) == 0:
+            logger.info("New data is not available.")
 
         # Step 3: Import catalogs
         self._import_base_catalogs(
@@ -238,6 +242,6 @@ class DailyPipeline(Pipeline):
         return nest_sources(dia_object, dia_source, dia_forced_source)
 
 
-def main(config):
+def main(config: PipelineConfig = None):
     """Main entry point for daily PPDB pipeline."""
     DailyPipeline(config=config).execute()
