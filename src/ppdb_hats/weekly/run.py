@@ -54,7 +54,7 @@ class WeeklyPipeline(Pipeline):
         # Step 3: Write aggregated catalog to disk for reimport
         self._write_catalog(tmp_dir, aggregated_catalog)
 
-        collection_id = date.today().isoformat()
+        collection_id = date.today().strftime("%Y%m%d")
 
         # Step 4: Reimport aggregated catalog with hats-import,
         # to optimize partitioning and parquet specifications.

@@ -31,7 +31,7 @@ def reimport_catalog(
     weekly_dir : pathlib.Path
         Base PPDB HATS directory where the reimported collection will be written.
     collection_id : str
-        Collection identifier string (YYYY-MM-DD format).
+        Collection identifier string (YYYYMMDD format).
     """
     logger.info("Reimporting catalog...")
     args = ImportArguments.reimport_from_hats(
@@ -59,7 +59,7 @@ def generate_collection(
     weekly_dir : pathlib.Path
         Base PPDB HATS directory where the collection will be created.
     collection_id : str
-        Collection identifier string (YYYY-MM-DD format).
+        Collection identifier string (YYYYMMDD format).
     """
     logger.info("Generating collection...")
 
