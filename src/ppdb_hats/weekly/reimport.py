@@ -41,6 +41,7 @@ def reimport_catalog(
         byte_pixel_threshold=1 << 30,
         skymap_alt_orders=[2, 4, 6],
         npix_suffix="/",
+        simple_progress_bar=True,
     )
     pipeline_with_client(args, client)
 
@@ -70,6 +71,7 @@ def generate_collection(
         CollectionArguments(
             output_path=weekly_dir,
             output_artifact_name=collection_artifact_name,
+            simple_progress_bar=True,
         )
         .catalog(catalog_path=catalog_path)
         .add_margin(margin_threshold=10)
