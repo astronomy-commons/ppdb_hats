@@ -58,7 +58,7 @@ testpaths = [
     "docs",
 ]
 addopts = "--doctest-modules --doctest-glob=*.rst"
-env_files = ["tests/.secrets"]
+env_files = [".secrets"]
 
 [tool.ruff]
 line-length = 110
