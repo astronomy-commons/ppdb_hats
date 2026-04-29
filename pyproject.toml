@@ -38,6 +38,7 @@ dev = [
     "pytest",
     "pytest-cov", # Used to report total code coverage
     "ruff", # Used for static linting of files
+    "pytest-dotenv", # To load env credentials
 ]
 
 [build-system]
@@ -57,6 +58,7 @@ testpaths = [
     "docs",
 ]
 addopts = "--doctest-modules --doctest-glob=*.rst"
+env_files = ["tests/.secrets"]
 
 [tool.ruff]
 line-length = 110
