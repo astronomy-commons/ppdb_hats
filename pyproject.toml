@@ -39,6 +39,7 @@ dev = [
     "pytest-cov", # Used to report total code coverage
     "ruff", # Used for static linting of files
     "pytest-dotenv", # To load env credentials
+    "lf_bench", # To run the benchmarks
 ]
 
 [build-system]
@@ -57,9 +58,9 @@ testpaths = [
     "src",
     "docs",
 ]
-addopts = "--doctest-modules --doctest-glob=*.rst"
+addopts = "--doctest-modules --doctest-glob=*.rst --benchmark-min-rounds=1 --benchmark-max-time=0"
 env_files = [".secrets"]
-
+                                                                                                                                                                                                                                                                                                                                               
 [tool.ruff]
 line-length = 110
 [tool.ruff.lint]
