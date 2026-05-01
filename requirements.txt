@@ -2,3 +2,4 @@ hats @ git+https://github.com/astronomy-commons/hats.git@main
 hats-import @ git+https://github.com/astronomy-commons/hats-import.git@main
 lsdb @ git+https://github.com/astronomy-commons/lsdb.git@main
 nested-pandas @ git+https://github.com/lincc-frameworks/nested-pandas.git@main
+lf_bench @ git+https://github.com/lincc-frameworks/lsdb-benchmarking.git@main
