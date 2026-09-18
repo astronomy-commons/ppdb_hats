@@ -1,8 +1,9 @@
 """
-Benchmarks for operations with the Rubin Alert Archive.
+Benchmarks for common operations with the Rubin Alert Archive.
 
-# Display the runtimes on the console with:
-pytest benchmarks/test_alert_archive.py --durations=0
+Display the runtimes on the console with::
+
+    pytest benchmarks/test_alert_archive.py --durations=0
 """
 from pathlib import Path
 
@@ -40,7 +41,7 @@ def mjd_tai_interval(day="2026-02-24"):
     return t0.tai.mjd, t1.tai.mjd
 
 
-def test_get_sources_for_night(alert_archive):
+def test_get_sources_for_night(alert_archive, dask_client):
     """Get all sources for a particular night"""
     mjd_start, mjd_end = mjd_tai_interval()
     night_data = alert_archive.query(
@@ -50,7 +51,7 @@ def test_get_sources_for_night(alert_archive):
     night_data.compute()
 
 
-def test_cone_search_for_night(alert_archive):
+def test_cone_search_for_night(alert_archive, dask_client):
     """One degree cone search over a particular night"""
     mjd_start, mjd_end = mjd_tai_interval()
     cone = alert_archive.cone_search(ra=63.2, dec=-47.8, radius_arcsec=3600)
@@ -61,7 +62,7 @@ def test_cone_search_for_night(alert_archive):
     night_cone.compute()
 
 
-def test_new_objects_for_night(alert_archive):
+def test_new_objects_for_night(alert_archive, dask_client):
     """New objects for particular night"""
     mjd_start, mjd_end = mjd_tai_interval()
     night_data = alert_archive.query(
@@ -73,8 +74,12 @@ def test_new_objects_for_night(alert_archive):
 
 
 @pytest.mark.parametrize("num_samples", [1, 100, 10_000])
-def test_naive_lc_aggregation(num_samples, alert_archive):
-    """Naive light curve for N objects by `diaObjectId`"""
+def test_naive_lc_aggregation(num_samples, alert_archive, dask_client):
+    """Light curves for N objects by `diaObjectId`.
+
+    It assumes (naively) that the sources for an object are all contained
+    within the same HEALPix partition.
+    """
     sample_ids = np.load(SAMPLES_PATH)[:num_samples]
 
     def aggregate_lightcurves(df):
@@ -104,7 +109,7 @@ def test_naive_lc_aggregation(num_samples, alert_archive):
     alert_archive.map_partitions(aggregate_lightcurves).compute()
 
 
-def test_per_night_counts(alert_archive):
+def test_per_night_counts(alert_archive, dask_client):
     """Per-night aggregate counts"""
 
     def get_counts(df):
@@ -114,7 +119,7 @@ def test_per_night_counts(alert_archive):
     per_partition.groupby(level=0).sum()
 
 
-def test_per_band_counts(alert_archive):
+def test_per_band_counts(alert_archive, dask_client):
     """Per-band aggregate counts"""
 
     def get_counts(df):
@@ -124,7 +129,7 @@ def test_per_band_counts(alert_archive):
     per_partition.groupby(level=0).sum()
 
 
-def test_crossmatch(alert_archive):
+def test_crossmatch(alert_archive, dask_client):
     """Crossmatch with another catalog"""
     gaia = lsdb.open_catalog("/astro/store/shire/hats/catalogs/gaia_dr3")
     # This cone has >2M rows
