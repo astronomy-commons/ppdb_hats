@@ -40,6 +40,7 @@ dev = [
     "ruff", # Used for static linting of files
     "pytest-dotenv", # To load env credentials
     "lf_bench", # To run the benchmarks
+    "pyvo", # For the TAPService
 ]
 
 [build-system]
