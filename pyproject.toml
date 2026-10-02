@@ -17,7 +17,7 @@ classifiers = [
 dynamic = ["version"]
 requires-python = ">=3.11"
 dependencies = [
-    "lsdb",
+    "lsdb>=0.10.4",
     "hats",
     "hats-import",
     "lsst-resources",

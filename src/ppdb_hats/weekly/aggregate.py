@@ -10,10 +10,9 @@ import hats as hc
 import numpy as np
 import pandas as pd
 from lsdb import Catalog
-from lsdb.dask.merge_catalog_functions import (
+from lsdb.operations.functions.merge_catalog_functions import (
     align_and_apply,
     align_catalogs,
-    construct_catalog_args,
     filter_by_spatial_index_to_pixel,
     get_healpix_pixels_from_alignment,
 )
@@ -43,14 +42,11 @@ def aggregate_object_data(dia_object_lc: Catalog) -> Catalog:
     logger.info("Aggregating object data...")
     alignment = align_catalogs(dia_object_lc, dia_object_lc)
     _, pixels = get_healpix_pixels_from_alignment(alignment)
-    joined_partitions = align_and_apply(
+    op = align_and_apply(
         [(dia_object_lc, pixels), (dia_object_lc.margin, pixels)],
         perform_join_on,
-    )
-    ddf, ddf_map, alignment = construct_catalog_args(
-        joined_partitions,
-        dia_object_lc._ddf._meta,
-        alignment,
+        dia_object_lc.meta,
+        pixels,
     )
     hc_catalog = hc.catalog.Catalog(
         dia_object_lc.hc_structure.catalog_info,
@@ -58,7 +54,7 @@ def aggregate_object_data(dia_object_lc: Catalog) -> Catalog:
         schema=dia_object_lc.original_schema,  # the schema is the same
         moc=alignment.moc,
     )
-    return Catalog(ddf, ddf_map, hc_catalog)
+    return Catalog(op, hc_catalog)
 
 
 def perform_join_on(df: pd.DataFrame, margin: pd.DataFrame, df_pixel, *args) -> pd.DataFrame:

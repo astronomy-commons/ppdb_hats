@@ -64,8 +64,8 @@ class DailyPipeline(Pipeline):
         new_dia_object_lc = self._nest_sources(client, tmp_dir)
 
         # Step 7: Write partitions and update metadata
-        npix_suffix = f"/{self.config.until_date}.parquet"
-        results = write_partitions(new_dia_object_lc, catalog, mapping_order, npix_suffix)
+        parquet_name = f"{self.config.until_date}.parquet"
+        results = write_partitions(new_dia_object_lc, catalog, mapping_order, parquet_name)
         new_pixels, new_counts, new_histograms = results
         update_skymaps(catalog, new_histograms, mapping_order)
         update_metadata(catalog, new_pixels, new_counts)
