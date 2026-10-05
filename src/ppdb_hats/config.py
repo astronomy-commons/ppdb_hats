@@ -23,8 +23,8 @@ class DaskConfig:
         Threads per worker process.
     """
 
-    n_workers: int = 16
-    memory_limit: str = "8GB"
+    n_workers: int = 8
+    memory_limit: str = "16GiB"
     threads_per_worker: int = 1
 
 
