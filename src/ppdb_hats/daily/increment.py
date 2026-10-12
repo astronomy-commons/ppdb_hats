@@ -2,35 +2,40 @@
 
 import logging
 
-import dask
 import numpy as np
 from hats.catalog import PartitionInfo
 from hats.io import paths
 from hats.io.file_io import write_fits_image
 from hats.io.skymap import read_skymap, write_skymap
-from hats.pixel_math.sparse_histogram import HistogramAggregator, SparseHistogram
+from hats.pixel_math.sparse_histogram import HistogramAggregator
 from lsdb.io.common import new_provenance_properties
-from lsdb.io.to_hats import calculate_histogram, create_modified_catalog_structure
+from lsdb.io.to_hats import (
+    create_modified_catalog_structure,
+    remove_done_files,
+    remove_histogram_files,
+)
+from lsdb.io.to_hats import write_partitions as lsdb_write_partitions
 
 logger = logging.getLogger(__name__)
 
 
-def write_partitions(catalog, base_catalog, histogram_order, npix_suffix, **kwargs):
+def write_partitions(catalog, *, base_catalog_dir, histogram_order, parquet_name, **kwargs):
     """Write all catalog partitions to disk as parquet files.
 
-    Uses Dask delayed tasks to write each partition in parallel.
-    Computes histograms for skymap generation during the write process.
+    Each partition is written to its leaf pixel directory as
+    ``Npix=<pixel>/<parquet_name>`` with LSDB's partition writer, which also
+    computes histograms for skymap generation.
 
     Parameters
     ----------
     catalog
         LSDB catalog with partitions to write.
-    base_catalog
-        Base HATS catalog for output path determination.
+    base_catalog_dir
+        Base HATS catalog path.
     histogram_order : int
         HEALPix order for histogram calculations.
-    npix_suffix : str
-        Suffix for npix files (e.g., "/2025-10-01.parquet").
+    parquet_name : str
+        Name of the parquet file in each pixel directory (e.g., "2025-10-01.parquet").
     **kwargs
         Additional keyword arguments passed to ``to_parquet``.
 
@@ -43,70 +48,20 @@ def write_partitions(catalog, base_catalog, histogram_order, npix_suffix, **kwar
         - ``new_histograms`` is a list of ``SparseHistogram`` objects for skymap updates.
     """
     logger.info("Writing partitions...")
-
-    results, pixels = [], []
-    base_catalog_dir = base_catalog.catalog_path
-    partitions = catalog._ddf.to_delayed()
-
-    for pixel, partition_index in catalog._ddf_pixel_map.items():
-        results.append(
-            perform_write(
-                partitions[partition_index],
-                pixel,
-                base_catalog_dir,
-                histogram_order,
-                npix_suffix,
-                **kwargs,
-            )
+    try:
+        return lsdb_write_partitions(
+            catalog,
+            base_catalog_dir,
+            histogram_order,
+            npix_suffix="/",
+            npix_parquet_name=parquet_name,
+            progress_bar=False,
+            **kwargs,
         )
-        pixels.append(pixel)
-
-    if len(results) > 0:
-        results = dask.compute(*results)
-        counts, histograms = list(zip(*results, strict=False))
-    else:
-        counts, histograms = (), ()
-
-    non_empty_indices = np.nonzero(counts)
-    non_empty_pixels = np.array(pixels)[non_empty_indices]
-    non_empty_counts = np.array(counts)[non_empty_indices]
-    non_empty_hists = np.array(histograms)[non_empty_indices]
-    return list(non_empty_pixels), list(non_empty_counts), list(non_empty_hists)
-
-
-@dask.delayed
-def perform_write(df, hp_pixel, base_catalog_dir, histogram_order, npix_suffix, **kwargs):
-    """Write a partition to disk and compute histogram.
-
-    Delayed task that writes partition data to parquet and calculates
-    the HEALPix histogram for skymap generation.
-
-    Parameters
-    ----------
-    df
-        Partition dataframe to write.
-    hp_pixel
-        HEALPix pixel object containing order and pixel information.
-    base_catalog_dir
-        Base directory of the HATS catalog.
-    histogram_order : int
-        Order for histogram calculation.
-    npix_suffix : str
-        Suffix for npix files.
-    **kwargs
-        Additional keyword arguments passed to ``to_parquet``.
-
-    Returns
-    -------
-    tuple
-        Tuple of ``(row_count, histogram)`` where ``histogram`` is a ``SparseHistogram``.
-    """
-    if len(df) == 0:
-        return 0, SparseHistogram([], [], histogram_order)
-    # The parquet leaf files live in a pixel directory. Create it if it does not exist.
-    pixel_path = paths.new_pixel_catalog_file(base_catalog_dir, hp_pixel, npix_suffix=npix_suffix)
-    df.to_parquet(pixel_path.path, filesystem=pixel_path.fs, **kwargs)
-    return len(df), calculate_histogram(df, histogram_order)
+    finally:
+        # Cleanup resume state files that LSDB writes in the catalog directory.
+        remove_histogram_files(base_catalog_dir)
+        remove_done_files(base_catalog_dir)
 
 
 def update_skymaps(existing_catalog, histograms, histogram_order):
